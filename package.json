@@ -1,6 +1,6 @@
 {
   "name": "sails-couchbase",
-  "version": "0.1.0",
+  "version": "0.11.0",
   "description": "YOUR_ADAPTER_DATASRC adapter for Sails / Waterline",
   "main": "index.js",
   "scripts": {
@@ -8,11 +8,11 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/YOUR_USERNAME/sails-YOUR_ADAPTER.git"
+    "url": "git+https://github.com/lan-nguyen91/couchbase-waterline"
   },
   "keywords": [
-    "A_KEYWORD_SPECIFIC_TO_YOUR_ADAPTER",
-    "ANOTHER_KEYWORD_SPECIFIC_TO_YOUR_ADAPTER",
+    "couchbase",
+    "couchbase ottoman waterline",
     "adapter",
     "sails",
     "waterline",
@@ -20,7 +20,7 @@
     "sailsjs",
     "sails.js"
   ],
-  "author": "YOUR NAME <YOUR@EMAIL>",
+  "author": "lan.nguyen@hart.com",
   "license": "MIT",
   "dependencies": {
     "async": "^2.0.0",
@@ -47,9 +47,9 @@
     ]
   },
   "bugs": {
-    "url": "https://github.com/YOUR_USERNAME/sails-YOUR_ADAPTER/issues"
+    "url": "https://github.com/lan-nguyen91/couchbase-waterline/issues"
   },
-  "homepage": "https://github.com/YOUR_USERNAME/sails-YOUR_ADAPTER#readme",
+  "homepage": "https://github.com/lan-nguyen91/couchbase-waterline#readme",
   "directories": {
     "test": "test"
   }
