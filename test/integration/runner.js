@@ -29,8 +29,6 @@ catch (e) {
 
 
 
-
-
 log.info('Testing `' + package.name + '`, a Sails adapter.');
 log.info('Running `waterline-adapter-tests` against ' + interfaces.length + ' interfaces...');
 log.info('( ' + interfaces.join(', ') + ' )');

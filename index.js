@@ -6,23 +6,21 @@
 // var _ = require('lodash');
 // var mysql = require('node-mysql');
 // ...
+var async     = require('async');
+var _         = require('lodash');
+var Connection   = require('./Connection');
+var Collection   = require('./Collection');
+var util = require('util');
+var uuid = require('node-uuid');
 
+var couchbase = require('couchbase');
 
+function sanitizeCollectionName (collectionName) {
+  return collectionName.replace(/([A-Z])/g, function (c) {
+    return c.toLowerCase();
+  });
+}
 
-/**
- * Sails Boilerplate Adapter
- *
- * Most of the methods below are optional.
- * 
- * If you don't need / can't get to every method, just implement
- * what you have time for.  The other methods will only fail if
- * you try to call them!
- * 
- * For many adapters, this file is all you need.  For very complex adapters, you may need more flexiblity.
- * In any case, it's probably a good idea to start with one file and refactor only if necessary.
- * If you do go that route, it's conventional in Node to create a `./lib` directory for your private submodules
- * and load them at the top of the file with other dependencies.  e.g. var update = `require('./lib/update')`;
- */
 module.exports = (function () {
 
 
@@ -30,87 +28,125 @@ module.exports = (function () {
   // (aka model) that gets registered with this adapter.
   var _modelReferences = {};
 
-
-  
-  // You may also want to store additional, private data
-  // per-collection (esp. if your data store uses persistent
-  // connections).
-  //
-  // Keep in mind that models can be configured to use different databases
-  // within the same app, at the same time.
-  // 
-  // i.e. if you're writing a MariaDB adapter, you should be aware that one
-  // model might be configured as `host="localhost"` and another might be using
-  // `host="foo.com"` at the same time.  Same thing goes for user, database, 
-  // password, or any other config.
-  //
-  // You don't have to support this feature right off the bat in your
-  // adapter, but it ought to get done eventually.
-  // 
-  // Sounds annoying to deal with...
-  // ...but it's not bad.  In each method, acquire a connection using the config
-  // for the current model (looking it up from `_modelReferences`), establish
-  // a connection, then tear it down before calling your method's callback.
-  // Finally, as an optimization, you might use a db pool for each distinct
-  // connection configuration, partioning pools for each separate configuration
-  // for your adapter (i.e. worst case scenario is a pool for each model, best case
-  // scenario is one single single pool.)  For many databases, any change to 
-  // host OR database OR user OR password = separate pool.
   var _dbPools = {};
-
-
+  var connections = {};
 
   var adapter = {
 
-    // Set to true if this adapter supports (or requires) things like data types, validations, keys, etc.
-    // If true, the schema for models using this adapter will be automatically synced when the server starts.
-    // Not terribly relevant if your data store is not SQL/schemaful.
     syncable: false,
 
 
-    // Default configuration for collections
-    // (same effect as if these properties were included at the top level of the model definitions)
     defaults: {
 
       // For example:
-      // port: 3306,
-      // host: 'localhost',
-      // schema: true,
-      // ssl: false,
-      // customThings: ['eh']
+      port: 8091,
+      host: 'localhost',
+      migrate: 'safe',
+      schema: true,
+      poolSize: 5,
+      bucket : 'default',
 
-      // If setting syncable, you should consider the migrate option, 
-      // which allows you to set how the sync will be performed.
-      // It can be overridden globally in an app (config/adapters.js)
-      // and on a per-model basis.
-      // 
-      // IMPORTANT:
-      // `migrate` is not a production data migration solution!
-      // In production, always use `migrate: safe`
-      //
-      // drop   => Drop schema and data, then recreate it
-      // alter  => Drop/add columns as necessary.
-      // safe   => Don't change anything (good for production DBs)
-      migrate: 'alter'
+      socketOptions: {
+        noDelay: true,
+        keepAlive: 0,
+        connectTimeoutMS: 0,
+        socketTimeoutMS: 0
+      }
     },
 
 
+    registerConnection : function (connection, collections, cb) {
+      if(!connection.identity) return cb(Errors.IdentityMissing);
+        if(connections[connection.identity]) return cb(Errors.IdentityDuplicate);
+
+      connection = _.defaults(connection , this.defaults);
+
+      connections[connection.identity] = {
+        config: connection,
+        collections: {},
+        bucket : connection.bucket
+      };
+
+      // Create a new active connection
+      new Connection(connection, function(_err, connectionCb) {
+
+        if(_err) {
+          return cb((function _createError(){
+            var msg = util.format('Failed to connect to CouchBase.  Are you sure your configured CouchBase instance is running?\n Error details:\n%s', util.inspect(_err, false, null));
+            var err = new Error(msg);
+            err.originalError = _err;
+            return err;
+          })());
+        }
+
+        connections[connection.identity].connection = connectionCb.ottoman;
+
+        // Build up a registry of collections
+        Object.keys(collections).forEach(function(key) {
+          var existed = false;
+
+          // ensure that if the collection is already exist then use it
+          // and a collection identity is unique
+          _.each(connections[connection.identity].collections, function(value){
+            if (value.identity == collections[key].identity) {
+              connections[connection.identity].collections[key] = value;
+              existed = true;
+            }
+          })
+
+          if (!existed)
+            connections[connection.identity].collections[key] = new Collection(collections[key], connectionCb.ottoman);
+        });
+
+        connectionCb.ottoman.ensureIndices(function (err){
+          if (err) throw new Error(err);
+          cb();
+        })
+      });
+    },
 
     /**
-     * 
+     *
      * This method runs when a model is initially registered
      * at server-start-time.  This is the only required method.
-     * 
+     *
      * @param  {[type]}   collection [description]
      * @param  {Function} cb         [description]
      * @return {[type]}              [description]
      */
-    registerCollection: function(collection, cb) {
+    registerCollection: function(connection, collections, cb) {
+      if(!connection.identity) return cb(Errors.IdentityMissing);
+      if(connections[connection.identity]) return cb(Errors.IdentityDuplicate);
 
-      // Keep a reference to this collection
-      _modelReferences[collection.identity] = collection;
-      
-      cb();
+      // Merging default options
+      connection = _.defaults(connection, this.defaults);
+
+      // Store the connection
+      connections[connection.identity] = {
+        config: connection,
+        collections: {}
+      };
+
+      // Create a new active connection
+      new Connection(connection, function(_err, db) {
+
+        if(_err) {
+          return cb((function _createError(){
+            var msg = util.format('Failed to connect to MongoDB.  Are you sure your configured Mongo instance is running?\n Error details:\n%s', util.inspect(_err, false, null));
+            var err = new Error(msg);
+            err.originalError = _err;
+            return err;
+          })());
+        }
+        connections[connection.identity].connection = db;
+
+        // Build up a registry of collections
+        Object.keys(collections).forEach(function(key) {
+          connections[connection.identity].collections[key] = new Collection(collections[key], db);
+        });
+
+        cb();
+      });
     },
 
 
@@ -118,32 +154,30 @@ module.exports = (function () {
      * Fired when a model is unregistered, typically when the server
      * is killed. Useful for tearing-down remaining open connections,
      * etc.
-     * 
+     *
      * @param  {Function} cb [description]
      * @return {[type]}      [description]
      */
-    teardown: function(cb) {
-      cb();
+    teardown: function(connection, cb) {
+      connections[connection].connection.bucket.disconnect();
+      if (!connections[connection].connection.bucket)
+        cb('Fail to disconnect with database.')
+      cb(null, true);
     },
 
 
 
     /**
-     * 
+     *
      * REQUIRED method if integrating with a schemaful
      * (SQL-ish) database.
-     * 
+     *
      * @param  {[type]}   collectionName [description]
      * @param  {[type]}   definition     [description]
      * @param  {Function} cb             [description]
      * @return {[type]}                  [description]
      */
     define: function(collectionName, definition, cb) {
-
-      // If you need to access your private data for this collection:
-      var collection = _modelReferences[collectionName];
-
-      // Define a new "table" or "collection" schema in the data store
       cb();
     },
 
@@ -151,19 +185,19 @@ module.exports = (function () {
      *
      * REQUIRED method if integrating with a schemaful
      * (SQL-ish) database.
-     * 
+     *
      * @param  {[type]}   collectionName [description]
      * @param  {Function} cb             [description]
      * @return {[type]}                  [description]
      */
-    describe: function(collectionName, cb) {
+    describe: function(connectionName, collectionName, cb) {
 
-      // If you need to access your private data for this collection:
-      var collection = _modelReferences[collectionName];
-
-      // Respond with the schema (attributes) for a collection or table in the data store
-      var attributes = {};
-      cb(null, attributes);
+      var connectionObject = connections[connectionName];
+      var collection = connectionObject.collections[collectionName];
+      if (collection)
+        return cb(null, collection.model);
+      else
+        return cb(new Error('No Collection Found'));
     },
 
 
@@ -172,25 +206,29 @@ module.exports = (function () {
      *
      * REQUIRED method if integrating with a schemaful
      * (SQL-ish) database.
-     * 
+     *
      * @param  {[type]}   collectionName [description]
      * @param  {[type]}   relations      [description]
      * @param  {Function} cb             [description]
      * @return {[type]}                  [description]
      */
-    drop: function(collectionName, relations, cb) {
-      // If you need to access your private data for this collection:
-      var collection = _modelReferences[collectionName];
+    drop: function(connectionName, collectionName, relations, cb) {
+      if (!connections[connectionName])
+        cb(new Error("Failed To LookUp Connection"));
+      if (!connections[connectionName].collections[collectionName])
+        cb(new Error("Failed To LookUp Connection"));
 
-      // Drop a "table" or "collection" schema from the data store
-      cb();
+      var collection = connections[connectionName].collections[collectionName];
+      var bucketName = connections[connectionName].bucket;
+
+      collection.drop(collectionName, bucketName, cb)
     },
 
 
 
 
     // OVERRIDES NOT CURRENTLY FULLY SUPPORTED FOR:
-    // 
+    //
     // alter: function (collectionName, changes, cb) {},
     // addAttribute: function(collectionName, attrName, attrDef, cb) {},
     // removeAttribute: function(collectionName, attrName, attrDef, cb) {},
@@ -201,65 +239,60 @@ module.exports = (function () {
 
 
     /**
-     * 
+     *
      * REQUIRED method if users expect to call Model.find(), Model.findOne(),
      * or related.
-     * 
+     *
      * You should implement this method to respond with an array of instances.
      * Waterline core will take care of supporting all the other different
      * find methods/usages.
-     * 
+     *
      * @param  {[type]}   collectionName [description]
      * @param  {[type]}   options        [description]
      * @param  {Function} cb             [description]
      * @return {[type]}                  [description]
      */
-    find: function(collectionName, options, cb) {
+    find: function(connectionName, collectionName, options, cb) {
 
-      // If you need to access your private data for this collection:
-      var collection = _modelReferences[collectionName];
+      if (!connections[connectionName])
+        cb(new Error("Failed To LookUp Connection"));
+      if (!connections[connectionName].collections[collectionName])
+        cb(new Error("Failed To LookUp Connection"));
 
-      // Options object is normalized for you:
-      // 
-      // options.where
-      // options.limit
-      // options.skip
-      // options.sort
-      
-      // Filter, paginate, and sort records from the datastore.
-      // You should end up w/ an array of objects as a result.
-      // If no matches were found, this will be an empty array.
+      var collection = connections[connectionName].collections[collectionName];
 
-      // Respond with an error, or the results.
-      cb(null, []);
+      collection.find(options, cb);
     },
 
     /**
      *
      * REQUIRED method if users expect to call Model.create() or any methods
-     * 
+     *
      * @param  {[type]}   collectionName [description]
      * @param  {[type]}   values         [description]
      * @param  {Function} cb             [description]
      * @return {[type]}                  [description]
      */
-    create: function(collectionName, values, cb) {
-      // If you need to access your private data for this collection:
-      var collection = _modelReferences[collectionName];
+    create: function(connectionName, collectionName, values, cb) {
+      if (!connections[connectionName]) {
+        throw new Error("Failed To LookUp Connection");
+      }
+      if (!connections[connectionName].collections[collectionName]) {
+        throw new Error("Failed To LookUp Connection");
+      }
 
-      // Create a single new model (specified by `values`)
+      var collection = connections[connectionName].collections[collectionName];
 
-      // Respond with error or the newly-created record.
-      cb(null, values);
+      collection.create(values, cb);
     },
 
 
 
-    // 
+    //
 
     /**
      *
-     * 
+     *
      * REQUIRED method if users expect to call Model.update()
      *
      * @param  {[type]}   collectionName [description]
@@ -268,51 +301,41 @@ module.exports = (function () {
      * @param  {Function} cb             [description]
      * @return {[type]}                  [description]
      */
-    update: function(collectionName, options, values, cb) {
+    update: function(connectionName, collectionName, options, values, cb) {
 
-      // If you need to access your private data for this collection:
-      var collection = _modelReferences[collectionName];
+      if (!connections[connectionName]) {
+        throw new Error("Failed To LookUp Connection");
+      }
+      if (!connections[connectionName].collections[collectionName]) {
+        throw new Error("Failed To LookUp Connection");
+      }
 
-      // 1. Filter, paginate, and sort records from the datastore.
-      //    You should end up w/ an array of objects as a result.
-      //    If no matches were found, this will be an empty array.
-      //    
-      // 2. Update all result records with `values`.
-      // 
-      // (do both in a single query if you can-- it's faster)
+      var collection = connections[connectionName].collections[collectionName];
 
-      // Respond with error or an array of updated records.
-      cb(null, []);
+      collection.update(options, values, cb);
     },
- 
+
     /**
      *
      * REQUIRED method if users expect to call Model.destroy()
-     * 
+     *
      * @param  {[type]}   collectionName [description]
      * @param  {[type]}   options        [description]
      * @param  {Function} cb             [description]
      * @return {[type]}                  [description]
      */
-    destroy: function(collectionName, options, cb) {
+    destroy: function(connectionName, collectionName, options, cb) {
+      if (!connections[connectionName]) {
+        throw new Error("Failed To LookUp Connection");
+      }
+      if (!connections[connectionName].collections[collectionName]) {
+        throw new Error("Failed To LookUp Connection");
+      }
 
-      // If you need to access your private data for this collection:
-      var collection = _modelReferences[collectionName];
+      var collection = connections[connectionName].collections[collectionName];
 
-
-      // 1. Filter, paginate, and sort records from the datastore.
-      //    You should end up w/ an array of objects as a result.
-      //    If no matches were found, this will be an empty array.
-      //    
-      // 2. Destroy all result records.
-      // 
-      // (do both in a single query if you can-- it's faster)
-
-      // Return an error, otherwise it's declared a success.
-      cb();
+      collection.destroy(options, cb);
     },
-
-
 
     /*
     **********************************************
@@ -399,7 +422,7 @@ module.exports = (function () {
     })
 
 
-    
+
 
     */
 
