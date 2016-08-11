@@ -1,6 +1,6 @@
 {
-  "name": "sails-YOUR_ADAPTER",
-  "version": "0.10.0",
+  "name": "sails-couchbase",
+  "version": "0.1.0",
   "description": "YOUR_ADAPTER_DATASRC adapter for Sails / Waterline",
   "main": "index.js",
   "scripts": {
@@ -8,7 +8,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/YOUR_USERNAME/sails-YOUR_ADAPTER.git"
+    "url": "git+https://github.com/YOUR_USERNAME/sails-YOUR_ADAPTER.git"
   },
   "keywords": [
     "A_KEYWORD_SPECIFIC_TO_YOUR_ADAPTER",
@@ -22,21 +22,20 @@
   ],
   "author": "YOUR NAME <YOUR@EMAIL>",
   "license": "MIT",
-  "readmeFilename": "README.md",
   "dependencies": {
     "async": "^2.0.0",
     "bluebird": "^3.4.1",
     "co": "^4.6.0",
-    "couchbase": "https://github.com/lan-nguyen91/couchnode.git",
+    "couchbase": "git+https://github.com/lan-nguyen91/couchnode.git",
     "couchnode": "^4.3.4",
     "deepmerge": "^0.2.10",
     "lodash": "^4.13.1",
     "node-uuid": "^1.4.7",
-    "ottoman": "https://github.com/lan-nguyen91/node-ottoman.git",
+    "ottoman": "git+https://github.com/lan-nguyen91/node-ottoman.git",
     "uppercamelcase": "^1.1.0"
   },
   "devDependencies": {
-    "waterline-adapter-tests": "https://github.com/lan-nguyen91/waterline-adapter-tests.git",
+    "waterline-adapter-tests": "git+https://github.com/lan-nguyen91/waterline-adapter-tests.git",
     "mocha": "*",
     "root-require": "~0.2.0",
     "captains-log": "~0.10.6"
@@ -46,5 +45,12 @@
     "implements": [
       "semantic"
     ]
+  },
+  "bugs": {
+    "url": "https://github.com/YOUR_USERNAME/sails-YOUR_ADAPTER/issues"
+  },
+  "homepage": "https://github.com/YOUR_USERNAME/sails-YOUR_ADAPTER#readme",
+  "directories": {
+    "test": "test"
   }
 }
