@@ -1,0 +1,12 @@
+{
+  ">" : ">",
+  "<" : "<",
+  ">=" : ">=",
+  "<=" : "<=",
+  "!"  : "!=",
+  "greaterThan" : ">",
+  "lessThan" : "<",
+  "greaterThanOrEqual" : ">=",
+  "lessThanOrEqual" : "<=",
+  "not" : "!="
+}

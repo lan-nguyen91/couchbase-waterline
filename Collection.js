@@ -3,6 +3,9 @@ var upperCamelCase = require('uppercamelcase');
 var async = require('async');
 var uuid = require('node-uuid')
 var couchbase = require('couchbase');
+var compareOpts = require('./comparisonOperation.json');
+
+var MATH_OPERATION = ['average', 'sum'];
 
 var Collection = module.exports = function Collection(definition, ottoman) {
 
@@ -54,7 +57,7 @@ Collection.prototype._parseDefinition = function _parseDefinition(definition) {
       if (nestedKey === 'defaultsTo') {
         value['default'] = nestedValue;
       }
-      if (nestedValue === 'datetime') {
+      if (nestedValue === 'datetime' || nestedValue == 'date') {
         value['type'] = 'Date';
       }
       if (nestedValue === 'binary') {
@@ -115,9 +118,62 @@ Collection.prototype.find = function(query, cb) {
 
   criteria = self.deNormalizeId(criteria);
 
-  // -------- check sort object ----
+  if (_.size(criteria)) {
+    _.each(criteria, function(v){
+      if (_.isObject(v) && v['contains'] !== undefined) {
+        v['$contains'] = v['contains'];
+        delete v['contains'];
+      }
+      if (_.isObject(v) && v['startsWith'] !== undefined) {
+        v['$startsWith'] = v['startsWith'];
+        delete v['startsWith'];
+      }
+      if (_.isObject(v) && v['endsWith'] !== undefined) {
+        v['$endsWith'] = v['endsWith'];
+        delete v['endsWith'];
+      }
+      if (_.isObject(v) && v['like'] !== undefined) {
+        v['$like'] = v['like'];
+        delete v['like'];
+      }
+      if (_.isObject(v) && v['like'] !== undefined) {
+        v['$like'] = v['like'];
+        delete v['like'];
+      }
+
+      _.each(compareOpts, function(mathSign, englishSign){
+        if (_.isObject(v) && v[englishSign] !== undefined) {
+          var holdValue = v[englishSign];
+          delete v[englishSign];
+          v[mathSign] = holdValue;
+        }
+      })
+    })
+  }
+
+  // -------- check querying object ----
   var sort = query.sort || {};
   if (!_.isEmpty(sort)) options.sort = sort;
+  if (!!query.ignoreCase) options.ignoreCase = query.ignoreCase;
+  if (!!query.groupBy) options.groupBy = query.groupBy;
+  if (!!query.limit) options.limit = query.limit;
+  if (!!query.skip) options.skip = query.skip;
+  if (!!query.select) options.select = query.select;
+  if (!!options.select && !_.includes(options.select, '_id')) options.select.push('_id');
+
+
+  //
+  // arithmetic operation
+  //
+  if (!!query.average) options.average = query.average;
+  if (!!query.max) options.max = query.max;
+  if (!!query.min) options.min = query.min;
+  if (!!query.sum) options.sum = query.sum;
+  if (query.groupBy && (!query.sum && !query.average)) {
+    cb(new Error('groupBy need to associate with an operation!')) 
+    return;
+  }
+
   //////////////////////////////////////////////////
 
   // ensure data persistant
@@ -211,7 +267,6 @@ Collection.prototype.update = function (option, values, cb) {
       cb(err);
     }
 
-    //console.log('find update result', result)
     if (_.isArray(result)) {
 
       // remove all record that was found
