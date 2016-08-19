@@ -41,17 +41,9 @@ module.exports = (function () {
       // For example:
       port: 8091,
       host: 'localhost',
-      migrate: 'safe',
-      schema: true,
-      poolSize: 5,
       bucket : 'default',
+      password : ""
 
-      socketOptions: {
-        noDelay: true,
-        keepAlive: 0,
-        connectTimeoutMS: 0,
-        socketTimeoutMS: 0
-      }
     },
 
 
