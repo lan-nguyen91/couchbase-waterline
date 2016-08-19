@@ -16,6 +16,7 @@ var Collection = module.exports = function Collection(definition, ottoman) {
 
   // Set an identity for this collection
   this.identity = definition.identity;
+  this.collection = definition.adapter.collection;
   this.connection = ottoman;
   this.definition = definition.definition;
 
@@ -53,10 +54,16 @@ Collection.prototype._buildIndices = function (definition) {
 Collection.prototype._parseDefinition = function _parseDefinition(definition) {
   var model = {};
   _.each(definition.definition, function(value, key){
-    _.each(value, function(nestedValue, nestedKey){ //type && defaultsTo
+    _.each(value, function(nestedValue, nestedKey){
+      // chnage nested key to fit ottoman
       if (nestedKey === 'defaultsTo') {
         value['default'] = nestedValue;
       }
+      if (nestedKey == 'model') {
+        value['ref'] = nestedValue 
+      }
+
+      // normalize data type
       if (nestedValue === 'datetime' || nestedValue == 'date') {
         value['type'] = 'Date';
       }
@@ -84,8 +91,7 @@ Collection.prototype._parseDefinition = function _parseDefinition(definition) {
 }
 
 Collection.prototype._buildModel = function (definition, indices, ottoman) {
-  //this.model = this.ottoman.model(this.identity, definition);
-  return ottoman.model(this.identity, definition, {index : indices});
+  return ottoman.model(this.collection, definition, {index : indices});
 }
 
 Collection.prototype._ensureIndices = function (cb) {
@@ -170,7 +176,7 @@ Collection.prototype.find = function(query, cb) {
   if (!!query.min) options.min = query.min;
   if (!!query.sum) options.sum = query.sum;
   if (query.groupBy && (!query.sum && !query.average)) {
-    cb(new Error('groupBy need to associate with an operation!')) 
+    cb(new Error('groupBy need to associate with an operation!'))
     return;
   }
 

@@ -159,9 +159,7 @@ module.exports = (function () {
      * @return {[type]}      [description]
      */
     teardown: function(connection, cb) {
-      connections[connection].connection.bucket.disconnect();
-      if (!connections[connection].connection.bucket)
-        cb('Fail to disconnect with database.')
+      delete connections[connection];
       cb(null, true);
     },
 
