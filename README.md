@@ -1,75 +1,91 @@
-![image_squidhome@2x.png](http://i.imgur.com/RIvu9.png) 
+[![](https://camo.githubusercontent.com/9e49073459ed4e0e2687b80eaf515d87b0da4a6b/687474703a2f2f62616c64657264617368792e6769746875622e696f2f7361696c732f696d616765732f6c6f676f2e706e67)](http://sailsjs.org/#!)
 
-# sails-adapter-boilerplate
+# sails-couchbase
 
-This template exists to make it easier for you to get started writing an adapter for Sails.js.
+Waterline adapter for CouchBase
 
-> ### Generator now available
+> **Heads up**
 >
-> `$ sails generate adapter foo`
->
-> (see https://github.com/balderdashy/sails-generate-adapter for the source.)
+> `sails-couchbase` maps the logical `id` attribute to the required `_id` physical-layer couchbase id.
+> In the current version of `sails-couchbase`.
 
+## Installation
 
+Install from NPM.
 
+```bash
+$ npm install sails-couchbase --save
+```
 
-> ### WARNING
->
-> This version of the adapter is for the upcoming v0.10 release of Sails / Waterline.
-> Check out the 0.8 branch for the original stuff.
+## Sails Configuration
 
+### Using with Sails v0.11.x (>= 0.10.x)
 
-
-## Getting started
-It's usually pretty easy to add your own adapters for integrating with proprietary systems or existing open APIs.  For most things, it's as easy as `require('some-module')` and mapping the appropriate methods to match waterline semantics.  To get started:
-
-1. Fork this repository
-2. Set up your `README.md` and `package.json` file.  Sails.js adapter module names are of the form sails-*, where * is the name of the datastore or service you're integrating with.
-3. Build your adapter.
-
-## How to test your adapter
-
-Configure the interfaces you plan to support (and targeted version of Sails/Waterline) in the adapter's `package.json` file:
+Add the following config to the `config/connections.js` file:
 
 ```javascript
-{
-  //...
-  "sailsAdapter": {
-    "sailsVersion": "~0.10.0",
-    "implements": [
-      "semantic",
-      "queryable",
-      "associations"
-    ]
+module.exports.connections = {
+
+  couchbaseDb: {
+    adapter: 'sails-couchbase',
+    host: 'localhost', // defaults to `localhost` if omitted
+    port: 8091, // defaults to 27017 if omitted
+    bucket: 'bucket_name', // or omit if not relevant
+    password: 'password_here' // or omit if not relevant
   }
-}
+};
 ```
 
-In your adapter's directory, run:
+And set this particular couchbase database as your default in `config/models.js`:
 
-```sh
-$ npm test
+```js
+module.exports.models = {
+  'connection': 'couchbaseDb'
+};
 ```
 
 
-## Publish your adapter
+### Legacy usage
 
-> You're welcome to write proprietary adapters and use them any way you wish--
-> these instructions are for releasing an open-source adapter.
+####Using with Sails v0.9.x
 
-1. Create a [new public repo](https://github.com/new) and add it as a remote (`git remote add origin git@github.com:yourusername/sails-youradaptername.git)
-2. Make sure you attribute yourself as the author and set the license in the package.json to "MIT".
-3. Run the tests one last time.
-4. Do a [pull request to sails-docs](https://github.com/balderdashy/sails-docs/compare/) adding your repo to `data/adapters.js`.  Please let us know about any special instructions for usage/testing. 
-5. We'll update the documentation with information about your new adapter
-6. Then everyone will adore you with lavish praises.  Mike might even send you jelly beans.
+Add the mongo config to the `config/adapters.js` file.
 
-7. Run `npm version patch`
-8. Run `git push && git push --tags`
-9. Run `npm publish`
+```javascript
+module.exports.adapters = {
+  'default': 'couchbase',
 
-## About Sails.js and Waterline
+  couchbase: {
+    module: 'sails-couchbase',
+    host: 'localhost',
+    port: 27017,
+    bucket : 'bucket'
+    password: 'password'
+  }
+};
+```
+
+Don't forget that couchbase required id as a string .
+
+## Sails.js
+
 http://sailsjs.org
 
-Waterline is a new kind of storage and retrieval engine for Sails.js.  It provides a uniform API for accessing stuff from different kinds of databases, protocols, and 3rd party APIs.  That means you write the same code to get users, whether they live in mySQL, LDAP, MongoDB, or Facebook.
+## Waterline
 
+[Waterline](https://github.com/balderdashy/waterline) is a brand new kind of storage and retrieval engine.
+
+It provides a uniform API for accessing stuff from different kinds of databases, protocols, and 3rd party APIs. That means you write the same code to get users, whether they live in MySQL, LDAP, MongoDB, or Facebook.
+
+
+## Sails.js License
+
+### The MIT License (MIT)
+
+Copyright © 2012-2015 Mike McNeil &amp; contributors
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the “Software”), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
