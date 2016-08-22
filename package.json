@@ -1,7 +1,7 @@
 {
   "name": "sails-couchbase",
-  "version": "0.12.1",
-  "description": "YOUR_ADAPTER_DATASRC adapter for Sails / Waterline",
+  "version": "0.12.2",
+  "description": "Adapter for couchbase with implementation of ODM",
   "main": "index.js",
   "scripts": {
     "test": "node test/integration/runner -R spec -b"
