@@ -37,4 +37,4 @@ Connection.prototype._buildConnection = function _buildConnection(cb) {
     }
   });
 
-
+}

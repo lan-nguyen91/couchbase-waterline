@@ -42,7 +42,6 @@ module.exports = (function () {
       port: 8091,
       host: 'localhost',
       bucket : 'default',
-      password : ""
 
     },
 

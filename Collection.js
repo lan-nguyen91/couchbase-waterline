@@ -60,7 +60,7 @@ Collection.prototype._parseDefinition = function _parseDefinition(definition) {
         value['default'] = nestedValue;
       }
       if (nestedKey == 'model') {
-        value['ref'] = nestedValue 
+        value = {'ref' : nestedValue}
       }
 
       // normalize data type
