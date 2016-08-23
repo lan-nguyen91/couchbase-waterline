@@ -60,7 +60,7 @@ Collection.prototype._parseDefinition = function _parseDefinition(definition) {
         value['default'] = nestedValue;
       }
       if (nestedKey == 'model') {
-        value = {'ref' : nestedValue}
+        value['type'] = 'string'
       }
 
       // normalize data type
@@ -114,6 +114,7 @@ Collection.prototype._ensureIndices = function (cb) {
 }
 
 Collection.prototype.find = function(query, cb) {
+  console.log("query", query)
   var self = this;
   var options = {};
 
@@ -199,6 +200,7 @@ Collection.prototype.find = function(query, cb) {
 }
 
 Collection.prototype.create = function (values, cb) {
+  console.log('values', values)
   var self = this;
 
   // this need to be revisit, not sure if generating id this way is good
