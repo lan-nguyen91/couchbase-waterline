@@ -32,7 +32,8 @@
     "lodash": "^4.13.1",
     "node-uuid": "^1.4.7",
     "ottoman": "git+https://github.com/lan-nguyen91/node-ottoman.git",
-    "uppercamelcase": "^1.1.0"
+    "uppercamelcase": "^1.1.0",
+    "waterline-errors": "^0.10.1"
   },
   "devDependencies": {
     "waterline-adapter-tests": "git+https://github.com/lan-nguyen91/waterline-adapter-tests.git",
@@ -43,7 +44,8 @@
   "sailsAdapter": {
     "sailsVersion": "~0.10.0",
     "implements": [
-     "associations"
+      "queryable",
+      "semantic"
     ]
   },
   "bugs": {
