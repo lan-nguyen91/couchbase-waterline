@@ -1,6 +1,6 @@
 {
   "name": "sails-couchbase",
-  "version": "0.12.2",
+  "version": "0.12.3",
   "description": "Adapter for couchbase with implementation of ODM",
   "main": "index.js",
   "scripts": {
