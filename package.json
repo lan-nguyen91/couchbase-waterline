@@ -30,9 +30,9 @@
     "couchnode": "^4.3.4",
     "deepmerge": "^0.2.10",
     "lodash": "^4.13.1",
-    "node-uuid": "^1.4.7",
     "ottoman": "git+https://github.com/lan-nguyen91/node-ottoman.git",
     "uppercamelcase": "^1.1.0",
+    "uuid": "^3.0.0",
     "waterline-errors": "^0.10.1"
   },
   "devDependencies": {

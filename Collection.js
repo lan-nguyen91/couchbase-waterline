@@ -1,7 +1,7 @@
 var _ = require('lodash');
 var upperCamelCase = require('uppercamelcase');
 var async = require('async');
-var uuid = require('node-uuid')
+var uuid = require('uuid')
 var couchbase = require('couchbase');
 var compareOpts = require('./comparisonOperation.json');
 

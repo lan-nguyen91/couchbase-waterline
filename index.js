@@ -11,7 +11,7 @@ var _         = require('lodash');
 var Connection   = require('./Connection');
 var Collection   = require('./Collection');
 var util = require('util');
-var uuid = require('node-uuid');
+var uuid = require('uuid');
 var Errors = require('waterline-errors').adapter;
 var couchbase = require('couchbase');
 
